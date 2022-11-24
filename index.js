@@ -27,7 +27,10 @@ async function run() {
 }
 run();
 
+
 const categoriesCollections = client.db('HandPhoneStore').collection('categories');
+const usersCollection = client.db('HandPhoneStore').collection('users');
+
 
 // get all the categories
 app.get('/categories', async (req, res) => {
@@ -38,8 +41,18 @@ app.get('/categories', async (req, res) => {
     } catch (error) {
         console.log(error)
     }
+})
+
+app.post('/setuser', async (req, res) => {
+    try {
+        const user = req.body;
+        const result = await usersCollection.insertOne(user);
+        res.send(result);
 
 
+    } catch (error) {
+        console.log(error);
+    }
 })
 
 
