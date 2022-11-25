@@ -81,7 +81,26 @@ app.get('/getrole', async (req, res) => {
     }
 })
 
-
+//my products
+app.get('/myproducts', async (req, res) => {
+    try {
+        const { email } = req.query;
+        const query = { email };
+        const user = await usersCollection.findOne(query);
+        const userRole = user.role;
+        if (userRole !== 'seller') {
+            return res.send({
+                message: 'You are not a seller.'
+            })
+        }
+        const products = await productsCollection.find({ sellerEmail: email }).toArray();
+        res.send({
+            products
+        })
+    } catch (error) {
+        console.log(error)
+    }
+})
 
 
 app.get('/', (req, res) => {
