@@ -114,6 +114,10 @@ app.get('/myproducts', verifySeller, async (req, res) => {
 //delete my products
 app.delete('/deletemyproduct', verifySeller, async (req, res) => {
     try {
+        const { email, id } = req.query;
+        const query = { _id: ObjectId(id), sellerEmail: email }
+        const result = await productsCollection.deleteOne(query);
+        console.log(result);
 
     } catch (error) {
         console.log(error)
