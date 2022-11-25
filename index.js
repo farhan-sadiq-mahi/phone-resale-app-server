@@ -66,6 +66,23 @@ app.get('/category/:id', async (req, res) => {
     }
 })
 
+//verify role api
+app.get('/getrole', async (req, res) => {
+    try {
+        const { email } = req.query;
+        const query = { email }
+        const user = await usersCollection.findOne(query);
+        const userRole = user.role;
+        res.send({
+            userRole
+        })
+    } catch (error) {
+        console.log(error)
+    }
+})
+
+
+
 
 app.get('/', (req, res) => {
     res.send('Hello form the server')
