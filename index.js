@@ -265,6 +265,24 @@ app.delete('/deleteuser', verifyAdmin, async (req, res) => {
     }
 })
 
+//make products reported
+
+app.get('/reportedproduct', async (req, res) => {
+    try {
+        const id = req.query;
+        const filter = { _id: ObjectId(id) }
+        const option = { upsert: true }
+        const updatedDoc = {
+            $set: {
+                isReported: true
+            }
+        }
+        const updatedProduct = await productsCollection.updateOne(filter, updatedDoc, option);
+        res.send(updatedProduct);
+    } catch (error) {
+        console.log(error)
+    }
+})
 
 
 app.get('/', (req, res) => {
