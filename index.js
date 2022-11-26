@@ -285,6 +285,29 @@ app.get('/reportedproduct', async (req, res) => {
 })
 
 
+//get all reported items api
+app.get('/reporteditems', verifyAdmin, async (req, res) => {
+    try {
+        const query = { isReported: true }
+        const result = await productsCollection.find(query).toArray();
+        res.send(result)
+    } catch (error) {
+        console.log(error);
+    }
+})
+
+//delete reported item api 
+app.delete('/deleteitem', verifyAdmin, async (req, res) => {
+    try {
+        const { id } = req.query;
+        const query = { _id: ObjectId(id) }
+        const result = await productsCollection.deleteOne(query);
+        res.send(result);
+    } catch (error) {
+
+    }
+})
+
 app.get('/', (req, res) => {
     res.send('Hello form the server')
 })
