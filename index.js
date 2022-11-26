@@ -253,6 +253,19 @@ app.get('/getallbuyers', verifyAdmin, async (req, res) => {
     }
 })
 
+//delete user api 
+app.delete('/deleteuser', verifyAdmin, async (req, res) => {
+    try {
+        const { id } = req.query;
+        const query = { _id: ObjectId(id) }
+        const result = await usersCollection.deleteOne(query);
+        res.send(result);
+    } catch (error) {
+
+    }
+})
+
+
 
 app.get('/', (req, res) => {
     res.send('Hello form the server')
