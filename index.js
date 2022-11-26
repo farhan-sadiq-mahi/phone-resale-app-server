@@ -38,12 +38,35 @@ const productsCollection = client.db('HandPhoneStore').collection('products');
 //verify seller middleware 
 async function verifySeller(req, res, next) {
     const { email } = req.query;
+    if (!email) {
+        return res.status(403).send({
+            message: 'Forbidden access.'
+        })
+    }
     const query = { email };
     const user = await usersCollection.findOne(query);
-    const userRole = user.role;
+    const userRole = user?.role;
     if (userRole !== 'seller') {
         return res.send({
             message: 'You are not a seller.'
+        })
+    }
+    next();
+}
+//verify admin middleware 
+async function verifyAdmin(req, res, next) {
+    const { email } = req.query;
+    if (!email) {
+        return res.status(403).send({
+            message: 'Forbidden access.'
+        })
+    }
+    const query = { email };
+    const user = await usersCollection.findOne(query);
+    const userRole = user?.role;
+    if (userRole !== 'admin') {
+        return res.send({
+            message: 'You are not an admin.'
         })
     }
     next();
@@ -61,11 +84,23 @@ app.get('/categories', async (req, res) => {
 })
 
 //add users to the database
-app.post('/setuser', async (req, res) => {
+app.put('/setuser', async (req, res) => {
     try {
         const user = req.body;
-        const result = await usersCollection.insertOne(user);
+        const option = { upsert: true };
+        const filter = { email: user.email }
+        const userDoc = {
+            $set: {
+                email: user.email,
+                img: user.img,
+                name: user.name,
+                role: user.role
+            }
+        }
+        const result = await usersCollection.updateOne(filter, userDoc, option);
+        console.log(result)
         res.send(result);
+
     } catch (error) {
         console.log(error);
     }
@@ -170,19 +205,53 @@ app.delete('/deletemyproduct', verifySeller, async (req, res) => {
 //make products advertised
 
 app.get('/advertised', verifySeller, async (req, res) => {
-
-    const id = req.query;
-    const filter = { _id: ObjectId(id) }
-    const option = { upsert: true }
-    const updatedDoc = {
-        $set: {
-            advertised: true
+    try {
+        const id = req.query;
+        const filter = { _id: ObjectId(id) }
+        const option = { upsert: true }
+        const updatedDoc = {
+            $set: {
+                advertised: true
+            }
         }
+        const updatedProduct = await productsCollection.updateOne(filter, updatedDoc, option);
+        res.send(updatedProduct);
+    } catch (error) {
+        console.log(error)
     }
-    const updatedProduct = await productsCollection.updateOne(filter, updatedDoc, option);
-    res.send(updatedProduct);
 })
 
+// get all advertised products
+app.get('/advertisedproducts', async (req, res) => {
+    try {
+        const query = { advertised: true }
+        const result = await productsCollection.find(query).toArray();
+        res.send(result);
+    } catch (error) {
+
+    }
+})
+
+//get all sellers api 
+app.get('/getallsellers', verifyAdmin, async (req, res) => {
+    try {
+        const query = { role: "seller" }
+        const result = await usersCollection.find(query).toArray();
+        res.send(result)
+    } catch (error) {
+        console.log(error);
+    }
+})
+//get all buyers api 
+app.get('/getallbuyers', verifyAdmin, async (req, res) => {
+    try {
+        const query = { role: "buyer" }
+        const result = await usersCollection.find(query).toArray();
+        res.send(result)
+    } catch (error) {
+        console.log(error);
+    }
+})
 
 
 app.get('/', (req, res) => {
