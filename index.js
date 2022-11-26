@@ -46,7 +46,6 @@ async function verifySeller(req, res, next) {
             message: 'You are not a seller.'
         })
     }
-    req.isVerified = user.isVerified;
     next();
 }
 
@@ -168,7 +167,21 @@ app.delete('/deletemyproduct', verifySeller, async (req, res) => {
 
 })
 
+//make products advertised
 
+app.get('/advertised', verifySeller, async (req, res) => {
+
+    const id = req.query;
+    const filter = { _id: ObjectId(id) }
+    const option = { upsert: true }
+    const updatedDoc = {
+        $set: {
+            advertised: true
+        }
+    }
+    const updatedProduct = await productsCollection.updateOne(filter, updatedDoc, option);
+    res.send(updatedProduct);
+})
 
 
 
