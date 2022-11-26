@@ -98,6 +98,23 @@ app.get('/getrole', async (req, res) => {
     }
 })
 
+//add product
+app.post('/addproduct', verifySeller, async (req, res) => {
+    try {
+        const productData = req.body;
+        console.log(productData);
+        const result = await productsCollection.insertOne(productData);
+        res.send(result);
+
+    } catch (error) {
+        console.log(error)
+    }
+})
+
+
+
+
+
 //my products
 app.get('/myproducts', verifySeller, async (req, res) => {
     try {
@@ -117,13 +134,15 @@ app.delete('/deletemyproduct', verifySeller, async (req, res) => {
         const { email, id } = req.query;
         const query = { _id: ObjectId(id), sellerEmail: email }
         const result = await productsCollection.deleteOne(query);
-        console.log(result);
+        res.send(result)
 
     } catch (error) {
         console.log(error)
     }
 
 })
+
+
 
 
 app.get('/', (req, res) => {
