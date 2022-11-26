@@ -46,6 +46,7 @@ async function verifySeller(req, res, next) {
             message: 'You are not a seller.'
         })
     }
+    req.isVerified = user.isVerified;
     next();
 }
 
@@ -98,11 +99,36 @@ app.get('/getrole', async (req, res) => {
     }
 })
 
+
+
+// isVerified seller
+app.get('/sellerVerified', verifySeller, async (req, res) => {
+    try {
+        const { email } = req.query;
+        const query = { email }
+        const user = await usersCollection.findOne(query);
+        const isVerified = user.isVerified;
+        if (isVerified) {
+            res.send({
+                isVerified: true
+            })
+        }
+        else {
+            res.send({
+                isVerified: false
+            })
+        }
+
+    } catch (error) {
+        console.log(error)
+    }
+})
+
+
 //add product
 app.post('/addproduct', verifySeller, async (req, res) => {
     try {
         const productData = req.body;
-        console.log(productData);
         const result = await productsCollection.insertOne(productData);
         res.send(result);
 
@@ -141,6 +167,7 @@ app.delete('/deletemyproduct', verifySeller, async (req, res) => {
     }
 
 })
+
 
 
 
