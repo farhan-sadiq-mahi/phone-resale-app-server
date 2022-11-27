@@ -1,10 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 5000;
-const jwt = require('jsonwebtoken')
-require('dotenv').config();
+const jwt = require('jsonwebtoken');
+const stripe = require("stripe")(process.env.STRIPE_SK);
 
 
 app.use(cors());
@@ -389,6 +390,19 @@ app.get('/mybooking', verifyJWT, async (req, res) => {
     }
 })
 
+
+//get my bookings
+app.get('/order', async (req, res) => {
+    try {
+        const { id } = req.query;
+        const query = { _id: ObjectId(id) };
+        const result = await bookingsCollection.findOne(query);
+        res.send(result);
+    } catch (error) {
+        console.log(error)
+    }
+})
+
 //get the jwt token
 app.post('/jwt', (req, res) => {
     const user = req.body;
@@ -396,6 +410,44 @@ app.post('/jwt', (req, res) => {
     res.send({ token });
 })
 
+
+//payment api
+app.post("/create-payment-intent", async (req, res) => {
+    const { price } = req.body;
+    const amount = parseInt(price) * 100;
+    console.log(amount)
+    // Create a PaymentIntent with the order amount and currency
+    const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        "payment_method_types": [
+            "card"
+        ]
+    });
+
+    res.send({
+        clientSecret: paymentIntent.client_secret,
+    });
+});
+
+//change product on my booking 
+app.get('/paid', async (req, res) => {
+    try {
+        const { id, productID } = req.query;
+        const filter = { _id: ObjectId(id) }
+        const option = { upsert: true }
+        const updatedDoc = {
+            $set: {
+                paid: true
+            }
+        }
+        const updatedProduct = await bookingsCollection.updateOne(filter, updatedDoc, option);
+        const removeFormCollection = await productsCollection.deleteOne({ _id: ObjectId(productID) });
+        res.send(updatedDoc);
+    } catch (error) {
+        console.log(error)
+    }
+})
 
 app.get('/', (req, res) => {
     res.send('Hello form the server')
