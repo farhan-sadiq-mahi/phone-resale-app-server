@@ -3,12 +3,12 @@ const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 5000;
+const jwt = require('jsonwebtoken')
 require('dotenv').config();
 
 
 app.use(cors());
 app.use(express.json());
-
 
 
 // Mongodb details 
@@ -31,9 +31,34 @@ run();
 const categoriesCollections = client.db('HandPhoneStore').collection('categories');
 const usersCollection = client.db('HandPhoneStore').collection('users');
 const productsCollection = client.db('HandPhoneStore').collection('products');
+const bookingsCollection = client.db('HandPhoneStore').collection('booking');
 
 
 
+
+//jwt middleware 
+function verifyJWT(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send({
+            success: false,
+            message: 'Unauthorized access'
+        })
+    }
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+        if (err) {
+            return res.status(401).send({
+                success: false,
+                message: 'Unauthorize access'
+            })
+        }
+        req.decoded = decoded;
+        next();
+
+    });
+
+}
 
 //verify seller middleware 
 async function verifySeller(req, res, next) {
@@ -242,8 +267,30 @@ app.get('/getallsellers', verifyAdmin, async (req, res) => {
         console.log(error);
     }
 })
+
+//verify seller api 
+app.get('/verifyseller', verifyAdmin, async (req, res) => {
+    try {
+        const id = req.query;
+        const filter = { _id: ObjectId(id) }
+        const option = { upsert: true }
+        const updatedDoc = {
+            $set: {
+                isVerified: true
+            }
+        }
+        const verifiiedSeller = await usersCollection.updateOne(filter, updatedDoc, option);
+        res.send(verifiiedSeller);
+    } catch (error) {
+        console.log(error)
+    }
+})
+
+
+
+
 //get all buyers api 
-app.get('/getallbuyers', verifyAdmin, async (req, res) => {
+app.get('/getallbuyers', verifyJWT, verifyAdmin, async (req, res) => {
     try {
         const query = { role: "buyer" }
         const result = await usersCollection.find(query).toArray();
@@ -307,6 +354,48 @@ app.delete('/deleteitem', verifyAdmin, async (req, res) => {
 
     }
 })
+
+
+//add booking
+app.post('/booking', async (req, res) => {
+    try {
+        const bookingData = req.body;
+        const result = await bookingsCollection.insertOne(bookingData);
+        res.send(result);
+
+    } catch (error) {
+        console.log(error)
+    }
+})
+
+//get my bookings
+app.get('/mybooking', verifyJWT, async (req, res) => {
+    try {
+
+        const decoded = req.decoded;
+        if (decoded.email !== req.query.email) {
+            res.status(403).send({
+                success: false,
+                message: 'Unauthorize access'
+            })
+        }
+
+        const { email } = req.query;
+        const query = { email: email };
+        const result = await bookingsCollection.find(query).toArray();
+        res.send(result);
+    } catch (error) {
+        console.log(error)
+    }
+})
+
+//get the jwt token
+app.post('/jwt', (req, res) => {
+    const user = req.body;
+    const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '7d' })
+    res.send({ token });
+})
+
 
 app.get('/', (req, res) => {
     res.send('Hello form the server')
